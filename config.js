@@ -8,7 +8,7 @@
 window.GALLERY_CONFIG = {
   // 1) رابط الـ Web App من Google Apps Script (ينتهي بـ /exec)
   //    مثال: "https://script.google.com/macros/s/AKfyc..../exec"
-  WEB_APP_URL: "",
+  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbwB-pjHy-_qg8wpbV96ygYkJEjDiUhYfryXaVaI1dsyN0QvuD5a4-iEFl5przfXpt1b/exec",
 
   // 2) نص المناسبة الصغير أعلى الأسماء
   eyebrow: "بمناسبة زواج",
