@@ -25,6 +25,13 @@
  *  ملاحظة: عند إضافة/حذف صور من المجلد لاحقاً تظهر التغييرات تلقائياً
  *  (خلال دقائق بسبب التخزين المؤقت). لتفريغ الكاش فوراً: أعد النشر أو
  *  افتح الرابط مضيفاً ?nocache=1
+ *
+ *  (اختياري لتسريع التخطيط) تفعيل أبعاد الصور:
+ *  ------------------------------------------------------------------
+ *  إن فعّلت «خدمة Drive المتقدمة» فسيُرسِل السكربت عرض/ارتفاع كل صورة،
+ *  فيبني الموقع شبكته فوراً وبثبات تام دون قياس. للتفعيل (اختياري تماماً):
+ *    في محرر Apps Script: Services (＋) ← Drive API ← Add.
+ *  إن لم تُفعّلها فلا مشكلة — الموقع يقيس نِسَب الصور تلقائياً.
  * =====================================================================
  */
 
@@ -33,6 +40,11 @@ var FOLDER_ID = "1958Rm8H2k27mEhWIqy3T2tV9wGdZ7xxV";
 
 // مدة التخزين المؤقت بالثواني (لتسريع التحميل وتقليل الضغط)
 var CACHE_SECONDS = 300;
+
+// هل «خدمة Drive المتقدمة» مفعّلة؟ (تُستخدم لجلب أبعاد الصور — اختياري)
+var HAS_DRIVE_API = (function () {
+  try { return (typeof Drive !== "undefined") && !!Drive.Files; } catch (e) { return false; }
+})();
 
 function doGet(e) {
   var params = (e && e.parameter) || {};
@@ -81,11 +93,14 @@ function listImages(skipCache) {
     var f = it.next();
     var mime = f.getMimeType();
     if (mime && mime.indexOf("image/") === 0) {
+      var dim = getImageSize(f.getId());   // {w,h} أو null
       out.push({
         id: f.getId(),
         name: f.getName(),
         mime: mime,
         size: f.getSize(),
+        w: dim && dim.w,
+        h: dim && dim.h,
         // للترتيب حسب أحدث إضافة إن رغبت
         created: f.getDateCreated().getTime()
       });
@@ -97,11 +112,35 @@ function listImages(skipCache) {
     return String(a.name).localeCompare(String(b.name), "ar", { numeric: true });
   });
 
-  // لا نُرسل حجم/تاريخ للواجهة (غير مطلوب) — نبقيها خفيفة
-  var light = out.map(function (o) { return { id: o.id, name: o.name, mime: o.mime }; });
+  // نبقيها خفيفة: المعرّف والاسم والنوع + أبعاد الصورة إن توفّرت (لتخطيط فوري ثابت)
+  var light = out.map(function (o) {
+    var r = { id: o.id, name: o.name, mime: o.mime };
+    if (o.w && o.h) { r.w = o.w; r.h = o.h; }
+    return r;
+  });
 
   try { cache.put(key, JSON.stringify(light), CACHE_SECONDS); } catch (e) {}
   return light;
+}
+
+/**
+ * يعيد أبعاد الصورة {w, h} من بيانات Drive الوصفية إن كانت «خدمة Drive المتقدمة» مفعّلة،
+ * وإلا يعيد null (والموقع يقيس النِّسَب تلقائياً). آمن تماماً — لا يفشل التشغيل إن لم تُفعّل.
+ */
+function getImageSize(fileId) {
+  if (!HAS_DRIVE_API) return null;
+  try {
+    var meta = Drive.Files.get(fileId, { fields: "imageMediaMetadata(width,height)" });
+    var m = meta && meta.imageMediaMetadata;
+    if (m && m.width && m.height) return { w: m.width, h: m.height };
+  } catch (e) {
+    try {
+      var f2 = Drive.Files.get(fileId);
+      var m2 = f2 && f2.imageMediaMetadata;
+      if (m2 && m2.width && m2.height) return { w: m2.width, h: m2.height };
+    } catch (e2) {}
+  }
+  return null;
 }
 
 /** يمنع أي محارف غريبة في اسم دالة الـ callback */

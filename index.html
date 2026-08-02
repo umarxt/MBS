@@ -182,47 +182,59 @@
     }
     .section-head .count b { color: var(--gold); font-weight: 600; }
 
-    /* شبكة masonry */
-    .grid { column-gap: 18px; columns: 4; }
-    @media (max-width: 1100px){ .grid{ columns: 3; } }
-    @media (max-width: 720px){ .grid{ columns: 2; column-gap: 12px; } }
-    @media (max-width: 430px){ .grid{ columns: 1; } }
+    /* شبكة Masonry — أعمدة مرنة، التوزيع يتم في JS بأسلوب «أقصر عمود» مثل بينتريست */
+    .grid { display: flex; align-items: flex-start; gap: 18px; }
+    .grid .col { display: flex; flex-direction: column; gap: 18px; flex: 1 1 0; min-width: 0; }
+    @media (max-width: 720px){ .grid, .grid .col { gap: 12px; } }
 
     .card {
-      break-inside: avoid; margin-bottom: 18px; position: relative;
-      border-radius: var(--radius); overflow: hidden; cursor: pointer;
+      position: relative; border-radius: var(--radius); overflow: hidden; cursor: pointer;
       background: #e8edf1; box-shadow: var(--shadow-sm);
-      transition: transform .5s var(--ease), box-shadow .5s var(--ease);
-      opacity: 0; transform: translateY(16px);
+      transition: transform .55s var(--ease), box-shadow .55s var(--ease), opacity .6s var(--ease);
+      opacity: 0; transform: translateY(14px);
     }
-    @media (max-width: 720px){ .card{ margin-bottom: 12px; } }
     .card.in { opacity: 1; transform: none; }
     .card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
-    .card img { display: block; width: 100%; height: auto; transition: transform .7s var(--ease); }
-    .card:hover img { transform: scale(1.06); }
+    /* الصورة تملأ الإطار المحجوز مسبقاً (aspect-ratio) → لا قفز في التخطيط */
+    .card img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      opacity: 0; transition: opacity .6s var(--ease), transform .7s var(--ease);
+    }
+    .card img.show { opacity: 1; }
+    .card:hover img.show { transform: scale(1.06); }
+    /* وميض التحميل داخل الإطار المحجوز */
+    .card.is-loading::before {
+      content: ""; position: absolute; inset: 0; z-index: 0;
+      background: linear-gradient(100deg, #e6ebef 30%, #f1f4f7 50%, #e6ebef 70%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite;
+    }
 
     .card .veil {
-      position: absolute; inset: 0;
+      position: absolute; inset: 0; z-index: 2;
       background: linear-gradient(180deg, rgba(6,48,79,0) 40%, rgba(6,48,79,.55) 100%);
       opacity: 0; transition: opacity .5s var(--ease);
       display: flex; align-items: flex-end; justify-content: space-between;
       padding: 16px; gap: 10px;
     }
     .card:hover .veil { opacity: 1; }
-    .card .veil .peek {
-      width: 42px; height: 42px; border-radius: 50%; flex: none;
-      display: grid; place-items: center; color: #fff;
+    .card .veil .peek,
+    .card .veil .veil-btn {
+      width: 42px; height: 42px; border-radius: 50%; flex: none; padding: 0;
+      display: grid; place-items: center; color: #fff; cursor: pointer;
       background: rgba(255,255,255,.16); backdrop-filter: blur(6px);
       border: 1px solid rgba(255,255,255,.28);
-      transform: translateY(8px); transition: transform .5s var(--ease);
+      transform: translateY(8px); transition: transform .5s var(--ease), background .3s var(--ease);
     }
-    .card:hover .veil .peek { transform: none; }
-    .card .veil .peek svg { width: 20px; height: 20px; }
+    .card:hover .veil .peek,
+    .card:hover .veil .veil-btn { transform: none; }
+    .card .veil .veil-btn:hover { background: rgba(255,255,255,.32); }
+    .card .veil .veil-btn.busy { opacity: .6; pointer-events: none; }
+    .card .veil .peek svg,
+    .card .veil .veil-btn svg { width: 20px; height: 20px; }
 
     /* هيكل تحميل (shimmer) */
-    .skeleton { background: linear-gradient(100deg, #e6ebef 30%, #f1f4f7 50%, #e6ebef 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
     @keyframes shimmer { to { background-position: -200% 0; } }
-    .sk { break-inside: avoid; margin-bottom: 18px; border-radius: var(--radius); }
 
     /* حالات (فارغ/خطأ) */
     .state {
