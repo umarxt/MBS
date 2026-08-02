@@ -368,9 +368,9 @@
   }
 
   function updateCounts() {
-    var n = IMAGES.length;
-    $("count").innerHTML = "<b>" + n + "</b> " + (n === 1 ? "صورة" : n === 2 ? "صورتان" : n <= 10 ? "صور" : "صورة");
-    $("topCount").textContent = n + " صورة";
+    // عدد الصور مخفيّ بناءً على الطلب — لا نعرض «١٢٧ صورة»
+    if ($("count")) $("count").textContent = "";
+    if ($("topCount")) $("topCount").textContent = "";
   }
 
   /* ---------------------- Lightbox ---------------------- */
