@@ -124,6 +124,7 @@
       font-weight: 200; line-height: 1.12;
       font-size: clamp(42px, 11vw, 104px);
       letter-spacing: -.5px; margin-bottom: 8px;
+      white-space: nowrap;   /* اسم واحد في صف واحد (JS يضبط الحجم ليلائم العرض) */
     }
     .hero h1 .amp {
       color: var(--gold-l); font-weight: 300; font-style: italic;
@@ -410,7 +411,7 @@
 
     <div class="lb-stage">
       <div class="lb-spin" id="lbSpin"></div>
-      <img id="lbImg" alt="" />
+      <img id="lbImg" alt="" referrerpolicy="no-referrer" />
     </div>
 
     <div class="lb-bar">

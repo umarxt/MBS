@@ -32,6 +32,32 @@
       }
       $("footNames").textContent = CFG.coupleNames;
     }
+    fitName();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitName);
+    window.addEventListener("resize", debounce(fitName, 120), { passive: true });
+  }
+
+  /* يبقي اسم العنوان في صف واحد ويضبط حجمه ليملأ العرض المتاح دون تجاوز الشاشة */
+  function fitName() {
+    var el = $("names");
+    if (!el) return;
+    var parent = el.parentElement;
+    el.style.whiteSpace = "nowrap";
+    el.style.fontSize = "";              // ارجع لحجم CSS الأساسي ثم قِس
+    // العرض المتاح = الأصغر بين أقصى عرض للحاوية وعرض الشاشة (مع هامش جانبي)
+    var maxW = parseFloat(getComputedStyle(parent).maxWidth) || Infinity;
+    var viewport = document.documentElement.clientWidth - 48;   // 24px هامش لكل جهة
+    var avail = Math.min(maxW, viewport);
+    var w = el.scrollWidth;             // عرض النص عند الحجم الحالي
+    if (!avail || !w) return;
+    var cur = parseFloat(getComputedStyle(el).fontSize);
+    var size = cur * (avail / w) * 0.98;
+    size = Math.max(15, Math.min(104, size));   // سقف وأرضية للحجم
+    el.style.fontSize = size + "px";
+  }
+
+  function debounce(fn, ms) {
+    var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); };
   }
 
   function escapeHtml(s) {
@@ -143,7 +169,7 @@
       card.setAttribute("tabindex", "0");
       card.setAttribute("aria-label", "عرض الصورة " + (i + 1));
       card.innerHTML =
-        '<img loading="lazy" decoding="async" src="' + displayUrl(im.id, 800) + '" alt="' + escapeHtml(im.name || ("صورة " + (i + 1))) + '" />' +
+        '<img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="' + displayUrl(im.id, 800) + '" alt="' + escapeHtml(im.name || ("صورة " + (i + 1))) + '" />' +
         '<div class="veil"><span class="peek">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
           '<path d="M15 3h6v6M14 10l7-7M9 21H3v-6M10 14l-7 7"/></svg>' +
@@ -203,6 +229,7 @@
     lbSpin.style.display = "block";
 
     var loader = new Image();
+    loader.referrerPolicy = "no-referrer";
     loader.onload = function () {
       lbImg.src = loader.src;
       lbImg.alt = im.name || "";
@@ -224,7 +251,7 @@
 
   function preload(i) {
     if (i < 0 || i >= IMAGES.length) return;
-    var pre = new Image(); pre.src = displayUrl(IMAGES[i].id, 2000);
+    var pre = new Image(); pre.referrerPolicy = "no-referrer"; pre.src = displayUrl(IMAGES[i].id, 2000);
   }
 
   function stripExt(name) { return String(name).replace(/\.[a-z0-9]+$/i, ""); }
