@@ -294,6 +294,14 @@
     .btn-download:active { transform: translateY(0); }
     .btn-download.busy { pointer-events: none; opacity: .8; }
 
+    .btn-file {
+      background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.28);
+      backdrop-filter: blur(6px); font-weight: 500;
+    }
+    .btn-file:hover { transform: translateY(-2px); background: rgba(255,255,255,.2); }
+    .btn-file:active { transform: translateY(0); }
+    .btn-file.busy { pointer-events: none; opacity: .7; }
+
     .lb-ghost {
       width: 50px; height: 50px; border-radius: 50%; padding: 0; justify-content: center;
       background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.22);
@@ -427,9 +435,13 @@
     </div>
 
     <div class="lb-bar">
-      <button class="btn btn-download" id="lbDownload">
+      <button class="btn btn-download" id="lbSave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>
+        حفظ في الصور
+      </button>
+      <button class="btn btn-file" id="lbFile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-        تحميل بأعلى جودة
+        تحميل كملف
       </button>
     </div>
   </div>

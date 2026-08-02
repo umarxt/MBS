@@ -156,7 +156,8 @@
   function signature(list) { return (list || []).map(function (im) { return im.id; }).join(","); }
 
   /* ---------------------- جلب الصور عبر JSONP ---------------------- */
-  function fetchImages(background) {
+  function fetchImages(background, attempt) {
+    attempt = attempt || 1;
     var url = (CFG.WEB_APP_URL || "").trim();
     if (!url) {
       if (!background) showState("setup", "خطوة أخيرة قبل الانطلاق",
@@ -164,19 +165,25 @@
       return;
     }
 
-    if (!background) showSkeletons();
+    if (!background && attempt === 1) showSkeletons();
 
-    var cbName = "__gallery_cb_" + Date.now();
+    var cbName = "__gallery_cb_" + Date.now() + "_" + attempt;
     var done = false;
     var script = document.createElement("script");
+
+    // إعادة محاولة صامتة عند البطء/الفشل (تعالج برودة Apps Script) قبل إظهار أي خطأ
+    function retryOrFail(title, msg) {
+      if (background) return;   // لا نُخرّب المعرض المعروض من الكاش
+      if (attempt < 3) { setTimeout(function () { fetchImages(false, attempt + 1); }, attempt * 1500); return; }
+      showState("error", title, msg);
+    }
 
     var timer = setTimeout(function () {
       if (done) return;
       cleanup();
-      if (background) return;   // لا نُخرّب المعرض المعروض من الكاش
-      showState("error", "تعذّر تحميل الصور",
+      retryOrFail("تعذّر تحميل الصور",
         "انتهت مهلة الاتصال. تأكد من صحة رابط الـ Web App وأنه منشور بصلاحية «أي شخص».");
-    }, 20000);
+    }, 15000);
 
     function cleanup() {
       done = true;
@@ -205,6 +212,7 @@
       IMAGES = incoming;
       $("state-slot").innerHTML = "";
       ensureRatios(IMAGES, function () {
+        IMAGES = arrangeForBalance(IMAGES);   // توزيع الطولية بين العرضية قبل البناء
         buildMasonry();
         writeCache(IMAGES);
       });
@@ -214,8 +222,7 @@
     script.onerror = function () {
       if (done) return;
       cleanup();
-      if (background) return;
-      showState("error", "تعذّر الوصول للمصدر",
+      retryOrFail("تعذّر الوصول للمصدر",
         "لم نتمكن من الاتصال برابط الـ Web App. تأكد من صحة الرابط وصلاحيات النشر.");
     };
     document.head.appendChild(script);
@@ -259,6 +266,26 @@
     if (pending === 0) finish();
   }
   function validRatio(r) { return typeof r === "number" && isFinite(r) && r > 0.05 && r < 20; }
+
+  /* ---------------------- ترتيب أنيق: توزيع الطولية بين العرضية ----------------------
+   * سبب «تجمّع الطولية في الأسفل»: الصور مرتّبة بالاسم فتأتي الطولية ككتلة واحدة.
+   * هنا نوزّع الصور الطولية بالتساوي بين العرضية عبر كامل المعرض فيكون المظهر منسّقاً. */
+  function arrangeForBalance(list) {
+    var tall = [], rest = [];
+    list.forEach(function (im) {
+      if (validRatio(im.r) && im.r > 1.15) tall.push(im); else rest.push(im);
+    });
+    if (!tall.length || !rest.length) return list.slice();
+    var out = [], ti = 0, ri = 0, n = list.length;
+    for (var i = 0; i < n; i++) {
+      var takeTall;
+      if (ti >= tall.length) takeTall = false;
+      else if (ri >= rest.length) takeTall = true;
+      else takeTall = ((ti + 0.5) / tall.length) <= ((ri + 0.5) / rest.length);
+      out.push(takeTall ? tall[ti++] : rest[ri++]);
+    }
+    return out;
+  }
 
   /* ---------------------- بناء شبكة Masonry (توزيع «أقصر عمود») ---------------------- */
   function buildMasonry() {
@@ -324,7 +351,7 @@
     dl.className = "veil-btn dl"; dl.type = "button";
     dl.setAttribute("aria-label", "تحميل الصورة");
     dl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>';
-    dl.addEventListener("click", function (e) { e.stopPropagation(); saveImage(i, dl); });
+    dl.addEventListener("click", function (e) { e.stopPropagation(); saveToGallery(i, dl); });
     var peek = document.createElement("span");
     peek.className = "peek";
     peek.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M14 10l7-7M9 21H3v-6M10 14l-7 7"/></svg>';
@@ -457,7 +484,8 @@
 
   function finishBtn(btn) { if (btn) setTimeout(function () { btn.classList.remove("busy"); }, 800); }
 
-  function saveImage(index, btn) {
+  /* حفظ في معرض الجوال مباشرة (iOS/Android) عبر مشاركة الملف؛ وعلى الحاسوب تنزيل */
+  function saveToGallery(index, btn) {
     var im = IMAGES[index];
     if (!im) return;
     if (btn) btn.classList.add("busy");
@@ -510,6 +538,29 @@
     });
   }
 
+  /* تحميل الصورة كملف (تنزيل مباشر بأعلى جودة — للحاسوب أو من يريد ملفاً) */
+  function downloadAsFile(index, btn) {
+    var im = IMAGES[index];
+    if (!im) return;
+    if (btn) btn.classList.add("busy");
+    var name = downloadName(im, index);
+    showToast("جارٍ تحضير الملف بأعلى جودة…");
+
+    fetchBlob(im).then(function (blob) {
+      if (blob) {
+        var u = URL.createObjectURL(blob);
+        triggerAnchor(u, name, true);
+        setTimeout(function () { URL.revokeObjectURL(u); }, 15000);
+        showToast("تم تنزيل الصورة كملف");
+      } else {
+        // فشل الجلب: بديل عبر الرابط المباشر
+        triggerAnchor(originalUrl(im.id), name, false);
+        showToast("بدأ تنزيل الملف بأعلى جودة");
+      }
+      finishBtn(btn);
+    });
+  }
+
   /* ---------------------- توست ---------------------- */
   var toastTimer;
   function showToast(msg) {
@@ -530,7 +581,8 @@
     $("lbClose").addEventListener("click", closeLightbox);
     $("lbNext").addEventListener("click", next);
     $("lbPrev").addEventListener("click", prev);
-    $("lbDownload").addEventListener("click", function () { saveImage(current, $("lbDownload")); });
+    $("lbSave").addEventListener("click", function () { saveToGallery(current, $("lbSave")); });
+    $("lbFile").addEventListener("click", function () { downloadAsFile(current, $("lbFile")); });
 
     lb.addEventListener("click", function (e) {
       if (e.target === lb || e.target.classList.contains("lb-stage")) closeLightbox();
@@ -541,7 +593,7 @@
       if (e.key === "Escape") closeLightbox();
       else if (e.key === "ArrowLeft") next();   // RTL: يسار = التالي
       else if (e.key === "ArrowRight") prev();
-      else if (e.key === "d" || e.key === "D") saveImage(current, $("lbDownload"));
+      else if (e.key === "d" || e.key === "D") saveToGallery(current, $("lbSave"));
     });
 
     // السحب على الجوال
