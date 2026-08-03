@@ -11,17 +11,17 @@ window.GALLERY_CONFIG = {
   WEB_APP_URL: "https://script.google.com/macros/s/AKfycbwB-pjHy-_qg8wpbV96ygYkJEjDiUhYfryXaVaI1dsyN0QvuD5a4-iEFl5przfXpt1b/exec",
 
   // 2) نص المناسبة الصغير أعلى الأسماء
-  eyebrow: "بمناسبة زواج",
+  eyebrow: "تغطية زواج",
 
   // 3) اسم العريس (يظهر بالعنوان الرئيسي)
   coupleNames: "محمد بن سلمان بن عبد الرحمن الصفار",
 
   // 4) تاريخ المناسبة (نص حر — هجري أو ميلادي)
-  eventDate: "١٤٤٧ هـ",
+  eventDate: "١٤٤٧ - صفر - ١٩  هـ",
 
   // 5) جملة ترحيبية تحت العنوان
   subtitle: "شكراً لحضوركم وإحيائكم لهذه الليلة — هذه لحظاتنا، نهديها لكم لتبقى ذكرى",
 
   // 6) عنوان صفحة المتصفح
-  pageTitle: "معرض صور الزواج",
+  pageTitle: "معرض الصور MBS",
 };
